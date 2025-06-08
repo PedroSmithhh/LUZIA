@@ -1,0 +1,45 @@
+# Arquivos e pastas do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Ambientes virtuais
+venv/
+env/
+.venv/
+.env/
+
+# Arquivos de dados grandes e dataset IDRiD
+*.npy
+*.jpg
+*.tif
+Segmentation/
+preprocessed_data/
+data/
+
+# Arquivos de logs e temporários
+*.log
+*.tmp
+*.cache
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de IDEs e editores
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Dependências instaladas
+site-packages/
+dist/
+build/
+*.egg-info/
+
+# Outros
+*.bak
+*.swp
+*~
