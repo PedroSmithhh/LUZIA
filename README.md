@@ -15,6 +15,29 @@ Atualmente, o projeto está focado na etapa de **pré-processamento** dos dados,
   - Disco óptico (OD)
 - As máscaras indicam, em nível de pixel, a presença de cada lesão.
 
+## Configuração Inicial
+### 1. Criação da Pasta "data"
+- Crie uma pasta chamada `data` na raiz do projeto.
+- Baixe o dataset IDRiD do IEEE DataPort: [IDRiD Dataset](https://ieee-dataport.org/open-access/indian-diabetic-retinopathy-image-dataset-idrid).
+- Extraia apenas as pastas `Segmentation` e `Disease Grading` do arquivo baixado e coloque-as dentro da pasta `data`. A estrutura deve ficar assim:
+  ```
+  data/
+  ├── Segmentation/
+  │   ├── Original Images/
+  │   └── Segmentation Groundtruths/
+  └── Disease Grading/
+  ```
+
+### 2. Uso de Ambiente Virtual (Recomendado)
+- Para evitar conflitos entre dependências e manter o ambiente de desenvolvimento limpo, recomenda-se usar um ambiente virtual.
+- **Como criar um ambiente virtual:**
+  1. Abra o terminal na raiz do projeto.
+  2. Execute: `python -m venv venv` (no Windows) ou `python3 -m venv venv` (no macOS/Linux).
+  3. Ative o ambiente:
+     - Windows: `venv\Scripts\activate`
+     - macOS/Linux: `source venv/bin/activate`
+  4. Após ativar, instale as dependências conforme o arquivo `requirements.txt`.
+
 ## Etapas do Projeto Até o Momento
 ### 1. Pré-processamento
 - **Objetivo**: Preparar as imagens e máscaras para o treinamento do modelo U-Net.
@@ -25,3 +48,16 @@ Atualmente, o projeto está focado na etapa de **pré-processamento** dos dados,
 - **NumPy**: Para manipular arrays de dados de forma eficiente.
 - **TensorFlow**: Para conversão das máscaras para o formato one-hot.
 - **Pathlib**: Para gerenciar caminhos de arquivos de forma robusta.
+
+## Estrutura do Código
+- **Arquivo principal**: `preprocessing.py` contém o script de pré-processamento.
+- **Pastas**:
+  - `data/Segmentation/Original Images/Training Set`: Imagens de retina em JPG.
+  - `data/Segmentation/Segmentation Groundtruths/Training Set`: Máscaras em TIF, organizadas por tipo de lesão.
+- **Saída**: Arrays NumPy com imagens e máscaras pré-processadas, prontos para o treinamento do U-Net.
+
+## Como Executar
+1. Crie a pasta `data` e coloque as pastas `Segmentation` e `Disease Grading` dentro dela, conforme descrito acima.
+2. Instale as dependências: `pip install -r requirements.txt` (recomenda-se usar um ambiente virtual).
+3. Execute o script de pré-processamento: `python preprocessing.py`.
+4. Verifique a saída: formato das imagens (54, 256, 256, 3) e máscaras (54, 256, 256, 6).
