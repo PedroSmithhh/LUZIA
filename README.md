@@ -36,18 +36,20 @@ Atualmente, o projeto está focado na etapa de **pré-processamento** dos dados,
   3. Ative o ambiente:
      - Windows: `venv\Scripts\activate`
      - macOS/Linux: `source venv/bin/activate`
-  4. Após ativar, instale as dependências conforme o arquivo `requirements.txt`.
-
+  4. Após ativar, instale as dependências conforme o arquivo 
+  ```
+  pip install -r requirements.txt
+  ```
 ## Etapas do Projeto Até o Momento
+
 ### 1. Pré-processamento
 - **Objetivo**: Preparar as imagens e máscaras para o treinamento do modelo U-Net.
 
-## Ferramentas Utilizadas
-- **Python**: Linguagem principal do projeto.
-- **OpenCV**: Para carregar e processar imagens e máscaras.
-- **NumPy**: Para manipular arrays de dados de forma eficiente.
-- **TensorFlow**: Para conversão das máscaras para o formato one-hot.
-- **Pathlib**: Para gerenciar caminhos de arquivos de forma robusta.
+### 2. Modelo
+- **Objetivo**: Criar a arquitetura/modelo U-NET para ser usada no treinamento
+
+### 3. Treinamento
+- **Objetivo**: Treinar o modelo com as imagens "Training Set" do IDRID
 
 ## Estrutura do Código
 - **Arquivo principal**: `preprocessing.py` contém o script de pré-processamento.
@@ -61,3 +63,11 @@ Atualmente, o projeto está focado na etapa de **pré-processamento** dos dados,
 2. Instale as dependências: `pip install -r requirements.txt` (recomenda-se usar um ambiente virtual).
 3. Execute o script de pré-processamento: `python preprocessing.py`.
 4. Verifique a saída: formato das imagens (54, 256, 256, 3) e máscaras (54, 256, 256, 6).
+
+## Passo a Passo para Treinar o Modelo
+
+### 1. Execute o seguinte comando
+  ```
+  python model_and_training/training.py
+  ```
+  Pronto, você vera o seu modelo unet_model.keras disponível no seu diretório.
