@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 # Obter a raiz do projeto
 root_path = Path(__file__).parent.parent  # Volta uma pasta acima para encontrar a raiz
@@ -31,9 +32,9 @@ def load_and_preprocess(img_path, mask_paths, target_size=(256, 256)):
     for lesion in ["MA", "HE", "EX", "SE", "OD"]:
         mask_path = mask_paths[lesion]  # Caminho da máscara para a lesão atual
         if os.path.exists(mask_path):  # Verifica se a máscara existe
-            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)  # Carrega em escala de cinza
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)  # Carrega em escala de cinza (De 3 canais (RGB) vai pra 1 canal (cinza))
             mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST)  # Redimensiona, preservando valores discretos
-            mask = (mask > 0).astype(np.uint8)  # Binariza: pixels > 0 viram 1, outros 0
+            mask = (mask > 0).astype(np.uint8)  # Binariza: pixels > 0 viram 1, outros 0. uint8 -> compatibilidade com Numpy
         else:
             mask = np.zeros(target_size, dtype=np.uint8)  # Cria máscara zerada para lesões ausentes
         masks.append(mask)
@@ -46,10 +47,13 @@ def load_and_preprocess(img_path, mask_paths, target_size=(256, 256)):
     label_map = np.zeros(target_size, dtype=np.uint8)  # Começa com 0 (fundo)
     for i, lesion in enumerate(["MA", "HE", "EX", "SE", "OD"]):
         label_map[masks[:, :, i] == 1] = i + 1  # Atribui valores 1, 2, 3, 4, 5 para cada lesão
+        #plt.imshow(label_map)
     
     # Converter para one-hot encoding
     # Cada pixel vira um vetor de 6 elementos (ex.: [1, 0, 0, 0, 0, 0] para fundo)
     masks = tf.keras.utils.to_categorical(label_map, num_classes=6)  # Forma: (256, 256, 6)
+    #np.set_printoptions(threshold=np.inf)
+    #print(masks)
     
     return img, masks
 
