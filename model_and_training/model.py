@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tf_keras import layers, models
+import keras
+from keras import layers, models
 
 def unet_model(input_size=(256, 256, 3), num_classes=6):
     # Entrada do modelo
