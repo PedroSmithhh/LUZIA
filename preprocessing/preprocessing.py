@@ -1,109 +1,102 @@
 import os
-import cv2
-import numpy as np
+import shutil
+import random
 import tensorflow as tf
-from pathlib import Path
-import matplotlib.pyplot as plt
 
-# Obter a raiz do projeto
-root_path = Path(__file__).parent.parent  # Volta uma pasta acima para encontrar a raiz
+def organizar_dataset(original_dir, base_dir, split_size=0.8):
+    """
+    Organiza o dataset de imagens em pastas de treino e validação.
+    """
+    train_dir = os.path.join(base_dir, 'treino')
+    validation_dir = os.path.join(base_dir, 'validacao')
 
-# Definir o caminho para o dataset IDRiD
-base_dir = root_path / "data" / "Segmentation"
-img_dir = os.path.join(base_dir, "Original Images", "Training Set")  # Caminho da pasta com imagens de treino
-mask_dirs = {  # Caminho das pastas com as máscaras de cada lesão
-    "MA": os.path.join(base_dir, "Segmentation Groundtruths", "Training Set", "Microaneurysms"),
-    "HE": os.path.join(base_dir, "Segmentation Groundtruths", "Training Set", "Haemorrhages"),
-    "EX": os.path.join(base_dir, "Segmentation Groundtruths", "Training Set", "Hard Exudates"),
-    "SE": os.path.join(base_dir, "Segmentation Groundtruths", "Training Set", "Soft Exudates"),
-    "OD": os.path.join(base_dir, "Segmentation Groundtruths", "Training Set", "Optic Disc")
-}
+    # Cria a pasta base e as subpastas se não existirem
+    if os.path.exists(base_dir):
+        print(f"A pasta de destino '{base_dir}' já existe. Removendo-a para começar do zero.")
+        shutil.rmtree(base_dir)
 
-# Função para carregar e pré-processar uma imagem e suas máscaras
-def load_and_preprocess(img_path, mask_paths, target_size=(256, 256)):
-    # Carregar a imagem de retina
-    img = cv2.imread(img_path)  # Lê a imagem em formato BGR (padrão da biblioteca cv2)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Converte para RGB
-    img = cv2.resize(img, target_size)  # Redimensiona para 256x256
-    img = img / 255.0  # Normaliza os valores dos pixels para [0, 1]
-    
-    # Carregar as máscaras para cada tipo de lesão
-    masks = []
-    for lesion in ["MA", "HE", "EX", "SE", "OD"]:
-        mask_path = mask_paths[lesion]  # Caminho da máscara para a lesão atual
-        if os.path.exists(mask_path):  # Verifica se a máscara existe
-            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)  # Carrega em escala de cinza (De 3 canais (RGB) vai pra 1 canal (cinza))
-            mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST)  # Redimensiona, preservando valores discretos
-            mask = (mask > 0).astype(np.uint8)  # Binariza: pixels > 0 viram 1, outros 0. uint8 -> compatibilidade com Numpy
-        else:
-            mask = np.zeros(target_size, dtype=np.uint8)  # Cria máscara zerada para lesões ausentes
-        masks.append(mask)
-    
-    # Empilhar as máscaras em um único array
-    masks = np.stack(masks, axis=-1)  # Forma: (256, 256, 5), um canal por lesão
-    
-    # Criar um array de rótulos para cada pixel
-    # 0 = fundo, 1 = MA, 2 = HE, 3 = EX, 4 = SE, 5 = OD
-    label_map = np.zeros(target_size, dtype=np.uint8)  # Começa com 0 (fundo)
-    for i, lesion in enumerate(["MA", "HE", "EX", "SE", "OD"]):
-        label_map[masks[:, :, i] == 1] = i + 1  # Atribui valores 1, 2, 3, 4, 5 para cada lesão
-        #plt.imshow(label_map)
-    
-    # Converter para one-hot encoding
-    # Cada pixel vira um vetor de 6 elementos (ex.: [1, 0, 0, 0, 0, 0] para fundo)
-    masks = tf.keras.utils.to_categorical(label_map, num_classes=6)  # Forma: (256, 256, 6)
-    #np.set_printoptions(threshold=np.inf)
-    #print(masks)
-    
-    return img, masks
+    os.makedirs(train_dir)
+    os.makedirs(validation_dir)
+    print(f"Estrutura de pastas criada em: '{base_dir}'")
 
-# Função para salvar os dados pré-processados
-def save_preprocessed_data(images, masks, save_dir):
-    # Criar diretório para salvar os dados, se não existir
-    os.makedirs(save_dir, exist_ok=True)
-    
-    # Salvar imagens e máscaras como arquivos .npy
-    np.save(os.path.join(save_dir, "images.npy"), images)  # Salva array de imagens
-    np.save(os.path.join(save_dir, "masks.npy"), masks)    # Salva array de máscaras
-    print(f"Dados salvos em: {save_dir}")
+    for class_name in os.listdir(original_dir):
+        class_path = os.path.join(original_dir, class_name)
 
-# Função para carregar os dados pré-processados
-def load_preprocessed_data(load_dir="caminho/para/preprocessed_data"):
-    # Carregar os arrays salvos
-    images = np.load(os.path.join(load_dir, "images.npy"))
-    masks = np.load(os.path.join(load_dir, "masks.npy"))
-    print("Dados carregados!")
-    print("Formato das imagens:", images.shape)
-    print("Formato das máscaras:", masks.shape)
-    return images, masks
+        if not os.path.isdir(class_path):
+            continue
 
-# Carregar todas as imagens e máscaras
-images = []
-masks = []
-for img_file in os.listdir(img_dir):
-    if img_file.endswith(".jpg"):  # Verifica se é uma imagem JPG
-        img_path = os.path.join(img_dir, img_file)  # Caminho completo da imagem
-        # Mapear os caminhos das máscaras correspondentes
-        mask_paths = {
-            "MA": os.path.join(mask_dirs["MA"], img_file.replace(".jpg", "_MA.tif")),
-            "HE": os.path.join(mask_dirs["HE"], img_file.replace(".jpg", "_HE.tif")),
-            "EX": os.path.join(mask_dirs["EX"], img_file.replace(".jpg", "_EX.tif")),
-            "SE": os.path.join(mask_dirs["SE"], img_file.replace(".jpg", "_SE.tif")),
-            "OD": os.path.join(mask_dirs["OD"], img_file.replace(".jpg", "_OD.tif"))
-        }
-        # Chamar a função de pré-processamento
-        img, mask = load_and_preprocess(img_path, mask_paths)
-        images.append(img)  # Adicionar imagem à lista
-        masks.append(mask)  # Adicionar máscara à lista
+        # Criar subpastas de classe nos diretórios de treino e validação
+        os.makedirs(os.path.join(train_dir, class_name))
+        os.makedirs(os.path.join(validation_dir, class_name))
 
-# Converter listas para arrays NumPy
-images = np.array(images)  # Forma: (n_imagens, 256, 256, 3)
-masks = np.array(masks)    # Forma: (n_imagens, 256, 256, 6)
+        # Listar todas as imagens da classe e embaralhá-las
+        all_files = os.listdir(class_path)
+        random.shuffle(all_files)
 
-# Exibir o formato dos dados
-print("Formato das imagens:", images.shape)  # Exemplo: (54, 256, 256, 3)
-print("Formato das máscaras:", masks.shape)  # Exemplo: (54, 256, 256, 6)
+        # Calcular o ponto de divisão
+        split_point = int(len(all_files) * split_size)
+        train_files = all_files[:split_point]
+        validation_files = all_files[split_point:]
 
-# Salvar os dados pré-processados
-save_dir = str(root_path / "preprocessing" / "preprocessed_data")  # Define o diretório para salvar
-save_preprocessed_data(images, masks, save_dir)
+        # Copiar arquivos para as pastas de destino
+        for file_name in train_files:
+            source_file = os.path.join(class_path, file_name)
+            dest_file = os.path.join(train_dir, class_name, file_name)
+            shutil.copyfile(source_file, dest_file)
+
+        for file_name in validation_files:
+            source_file = os.path.join(class_path, file_name)
+            dest_file = os.path.join(validation_dir, class_name, file_name)
+            shutil.copyfile(source_file, dest_file)
+
+        print(f" -> {len(train_files)} imagens copiadas para treino.")
+        print(f" -> {len(validation_files)} imagens copiadas para validação.")
+
+    print("\nOrganização do dataset concluída com sucesso!")
+
+ORIGINAL_DATASET_DIR = 'data/'
+NEW_BASE_DIR = 'dataset/'
+
+organizar_dataset(ORIGINAL_DATASET_DIR, NEW_BASE_DIR, split_size=0.8)
+
+IMAGE_SIZE = (224, 224)
+BATCH_SIZE = 32
+SEED = 42
+
+train_dir = os.path.join(NEW_BASE_DIR, 'treino')
+validation_dir = os.path.join(NEW_BASE_DIR, 'validacao')
+
+# Data Augmentation
+train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input,
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    vertical_flip=True,
+    fill_mode='nearest'
+)
+
+# Gerador para os dados de validação
+validation_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+    preprocessing_function=tf.keras.applications.efficientnet.preprocess_input
+)
+
+train_generator = train_datagen.flow_from_directory(
+    train_dir,
+    target_size=IMAGE_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=True, # Embaralha os dados de treino
+    seed=SEED
+)
+
+validation_generator = validation_datagen.flow_from_directory(
+    validation_dir,
+    target_size=IMAGE_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False # Não embaralha os dados de validação
+)

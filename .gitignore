@@ -10,13 +10,14 @@ env/
 .venv/
 .env/
 
-# Arquivos de dados grandes e dataset IDRiD
+# Arquivos de dados
 *.npy
 *.jpg
 *.tif
 Segmentation/
 preprocessed_data/
 data/
+dataset/
 
 # Arquivos de logs e temporários
 *.log
